@@ -39,6 +39,13 @@ DrawStatusThumbnailWithViewProgress(
         )
 ```
 
+FEATURES
+-----
+
+- The library is using Coil for image caching and image loading from remote server
+- Library fully supports the images from Remote server and Local drawables
+- Upto 100 images can be added when the widget size is 200 dp
+
 LIMITATIONS
 -----
 
@@ -48,11 +55,14 @@ GET IN TOUCH ❤️
 -----
 
 Find this library useful? 
+
 Get in touch with me on LinkedIn (www.linkedin.com/in/ehtisham-ahmad-qureshi)
 
 Whatsapp: +966-59-760-2404
+
 email: ehtisham.ahmad89@gmail.com
-And [**follow me**](https://github.com/optimized-code) for my other useful content 👍
+
+And [**follow me**]on github (https://github.com/optimized-code) for my other useful content 👍
 
 LICENCE
 -----
