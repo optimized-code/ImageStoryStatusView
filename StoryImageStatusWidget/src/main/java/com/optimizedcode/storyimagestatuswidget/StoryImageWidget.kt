@@ -1,6 +1,5 @@
 package com.optimizedcode.storyimagestatuswidget
 
-import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -36,10 +35,8 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -63,38 +60,9 @@ private const val DISTANCE_MULTIPLIER = 0.05f
 private const val TOTAL_ANGLE = 360f
 private const val START_ANGLE = -90f
 private const val TAG = "OC_WIDGET"
-private var AUTO_MODE = false
-
-fun prepareImageList(): List<Any> {
-    return listOf(
-        "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU",
-        "https://fastly.picsum.photos/id/14/2500/1667.jpg?hmac=ssQyTcZRRumHXVbQAVlXTx-MGBxm6NHWD3SryQ48G-o",
-        "https://fastly.picsum.photos/id/20/3670/2462.jpg?hmac=CmQ0ln-k5ZqkdtLvVO23LjVAEabZQx2wOaT4pyeG10I",
-        "https://fastly.picsum.photos/id/22/4434/3729.jpg?hmac=fjZdkSMZJNFgsoDh8Qo5zdA_nSGUAWvKLyyqmEt2xs0",
-        "https://fastly.picsum.photos/id/28/4928/3264.jpg?hmac=GnYF-RnBUg44PFfU5pcw_Qs0ReOyStdnZ8MtQWJqTfA",
-        "https://fastly.picsum.photos/id/63/5000/2813.jpg?hmac=HvaeSK6WT-G9bYF_CyB2m1ARQirL8UMnygdU9W6PDvM",
-        "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU",
-        "https://fastly.picsum.photos/id/14/2500/1667.jpg?hmac=ssQyTcZRRumHXVbQAVlXTx-MGBxm6NHWD3SryQ48G-o",
-        "https://fastly.picsum.photos/id/20/3670/2462.jpg?hmac=CmQ0ln-k5ZqkdtLvVO23LjVAEabZQx2wOaT4pyeG10I"
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DrawStatusThumbnailWithViewProgress_preview() {
-    DrawStatusThumbnailWithViewProgress(
-        progressSize = 100,
-        strokeActiveColor = Color.Red,
-        imagesList = prepareImageList(),
-        progressBarColor = Color.LightGray,
-        autoModeIntervalInMilliSeconds = 3000
-    )
-}
 
 data class StatusInfo(
-    val startAngle: Float,
-    val arcLength: Float,
-    val gap: Float
+    val startAngle: Float
 )
 
 private fun calculateGap(imageCount: Int): Float {
@@ -125,6 +93,10 @@ private fun calculateDistance(progressSize: Int): Float {
     }
 }
 
+private fun calculateArcLength(imageCount: Int, gap: Float): Float {
+    return (TOTAL_ANGLE - (imageCount * gap)) / imageCount
+}
+
 private fun getImage(imagesList: List<Any>, index: Int): Any {
     var result: Any = R.drawable.ic_placeholder
     if (index < 0) {
@@ -146,11 +118,7 @@ internal fun getAllAnglesList(count: Int): ArrayList<StatusInfo> {
     var startArcAngle = START_ANGLE
     for (i in 0 until count) {
         result.add(
-            StatusInfo(
-                startAngle = startArcAngle,
-                arcLength = eachArcLength,
-                gap = gap
-            )
+            StatusInfo(startAngle = startArcAngle)
         )
         startArcAngle += (eachArcLength + gap)
     }
@@ -168,8 +136,7 @@ fun ViewStatusProgressBar(
     viewStatusIndex: Int,
     strokeActiveColor: Color = Color.Red,
     progressSize: Int = 240,
-    autoModeIntervalInMilliSeconds: Long,
-    isReset: Boolean = false
+    autoModeIntervalInMilliSeconds: Long
 ) {
 
     val targetValue = getTargetValue(
@@ -178,7 +145,6 @@ fun ViewStatusProgressBar(
     )
 
     val animateArc = remember { Animatable(0f) }
-    val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(viewStatusIndex) {
         animateArc.animateTo(
             targetValue = targetValue,
@@ -186,13 +152,7 @@ fun ViewStatusProgressBar(
                 durationMillis = autoModeIntervalInMilliSeconds.toInt(),
                 easing = LinearEasing
             )
-        ) {
-            coroutineScope.launch {
-                if (value == 1f && isReset) {
-                    animateArc.snapTo(0f)
-                }
-            }
-        }
+        )
     }
 
     Spacer(
@@ -220,7 +180,7 @@ fun ViewStatusProgressBar(
 @Composable
 fun DrawStatusThumbnailWithViewProgress(
     modifier: Modifier = Modifier,
-    progressSize: Int = 240,
+    progressSize: Int = 200,
     strokeActiveColor: Color = Color.Red,
     strokeInActiveColor: Color = Color.DarkGray,
     imageBackgroundColor: Color = Color.LightGray,
@@ -232,10 +192,16 @@ fun DrawStatusThumbnailWithViewProgress(
     @DrawableRes placeHolder: Int = R.drawable.ic_placeholder
 ) {
     val imageCount = imagesList.size
+    val gap = rememberSaveable {
+        calculateGap(imageCount)
+    }
+    val arcLength = rememberSaveable {
+        calculateArcLength(imageCount, gap)
+    }
+
     var viewStatusIndex by rememberSaveable { mutableIntStateOf(0) }
-    var autoModeToggle = rememberSaveable { autoMode }
-    //var isProgressRunning by rememberSaveable { mutableStateOf(true) }
-    var isProgressRunning = rememberSaveable { true }
+    var autoModeToggle by remember { mutableStateOf(autoMode) }
+    var isProgressRunning by rememberSaveable { mutableStateOf(true) }
 
     if (imageCount > 0) {
         val nonViewedStatuses = getAllAnglesList(imageCount)
@@ -249,6 +215,7 @@ fun DrawStatusThumbnailWithViewProgress(
                         viewStatusIndex++
                         isProgressRunning = true
                     }
+                    delay(autoModeIntervalInMilliSeconds)
                     autoModeToggle = false
                 }
             }
@@ -269,7 +236,7 @@ fun DrawStatusThumbnailWithViewProgress(
                                     color = strokeInActiveColor,
                                     startAngle = statusInfo.startAngle,
                                     useCenter = false,
-                                    sweepAngle = statusInfo.arcLength,
+                                    sweepAngle = arcLength,
                                     style = Stroke(
                                         (calculateStrokeWidth(progressSize)).dp.toPx(),
                                         cap = StrokeCap.Butt
@@ -287,7 +254,7 @@ fun DrawStatusThumbnailWithViewProgress(
                 strokeActiveColor = strokeActiveColor,
                 progressSize = progressSize,
                 modifier = Modifier.align(Alignment.Center),
-                autoModeIntervalInMilliSeconds = if (autoModeToggle) autoModeIntervalInMilliSeconds else 300
+                autoModeIntervalInMilliSeconds = if (autoModeToggle) autoModeIntervalInMilliSeconds else 150
             )
             Spacer(
                 modifier = Modifier
@@ -296,9 +263,9 @@ fun DrawStatusThumbnailWithViewProgress(
                             nonViewedStatuses.forEach { statusInfo ->
                                 drawArc(
                                     color = widgetBackground,
-                                    startAngle = statusInfo.startAngle + statusInfo.arcLength,
+                                    startAngle = statusInfo.startAngle + arcLength,
                                     useCenter = false,
-                                    sweepAngle = statusInfo.gap,
+                                    sweepAngle = gap,
                                     style = Stroke(
                                         (calculateStrokeWidth(progressSize)).dp.toPx(),
                                         cap = StrokeCap.Butt
@@ -327,7 +294,6 @@ fun DrawStatusThumbnailWithViewProgress(
                                 isProgressRunning = true
                             } else {
                                 viewStatusIndex = 0
-                                //autoModeToggle = false
                             }
                         }
                     }
