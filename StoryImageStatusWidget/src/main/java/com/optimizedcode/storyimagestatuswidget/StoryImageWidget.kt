@@ -61,6 +61,7 @@ private const val TOTAL_ANGLE = 360f
 private const val START_ANGLE = -90f
 private const val TAG = "OC_WIDGET"
 
+
 data class StatusInfo(
     val startAngle: Float
 )
