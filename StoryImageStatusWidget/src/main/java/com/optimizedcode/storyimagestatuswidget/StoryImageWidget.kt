@@ -2,6 +2,7 @@ package com.optimizedcode.storyimagestatuswidget
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,7 +22,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,10 +36,19 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.optimizedcode.storyimagestatuswidget.helpers.START_ANGLE
+import com.optimizedcode.storyimagestatuswidget.helpers.TOTAL_ANGLE
+import com.optimizedcode.storyimagestatuswidget.helpers.calculateArcLength
+import com.optimizedcode.storyimagestatuswidget.helpers.calculateDistance
+import com.optimizedcode.storyimagestatuswidget.helpers.calculateGap
+import com.optimizedcode.storyimagestatuswidget.helpers.calculateStrokeWidth
+import com.optimizedcode.storyimagestatuswidget.helpers.getAllAnglesList
+import com.optimizedcode.storyimagestatuswidget.helpers.getImage
+import com.optimizedcode.storyimagestatuswidget.helpers.getTargetValue
+import com.optimizedcode.storyimagestatuswidget.helpers.uptoPrecision
 
 /*
 **************************************************************
@@ -53,109 +63,36 @@ import kotlinx.coroutines.launch
  ***************************************************************
  */
 
-private const val MIN_GAP = 1f
-private const val MAX_GAP = 2f
-private const val STROKE_WIDTH_MULTIPLIER = 0.025f
-private const val DISTANCE_MULTIPLIER = 0.05f
-private const val TOTAL_ANGLE = 360f
-private const val START_ANGLE = -90f
-private const val TAG = "OC_WIDGET"
-
-
-data class StatusInfo(
-    val startAngle: Float
-)
-
-private fun calculateGap(imageCount: Int): Float {
-    var result = TOTAL_ANGLE / imageCount
-    if (result > MAX_GAP) {
-        result = MAX_GAP
-    } else if (result < MIN_GAP) {
-        result = MIN_GAP
-    }
-    return result
+fun prepareSmallImageList(): List<Any> {
+    return listOf(
+        "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU",
+        "https://fastly.picsum.photos/id/14/2500/1667.jpg?hmac=ssQyTcZRRumHXVbQAVlXTx-MGBxm6NHWD3SryQ48G-o",
+        "https://fastly.picsum.photos/id/20/3670/2462.jpg?hmac=CmQ0ln-k5ZqkdtLvVO23LjVAEabZQx2wOaT4pyeG10I",
+        "https://fastly.picsum.photos/id/22/4434/3729.jpg?hmac=fjZdkSMZJNFgsoDh8Qo5zdA_nSGUAWvKLyyqmEt2xs0",
+        "https://fastly.picsum.photos/id/22/4434/3729.jpg?hmac=fjZdkSMZJNFgsoDh8Qo5zdA_nSGUAWvKLyyqmEt2xs0"
+    )
 }
 
-private fun calculateStrokeWidth(progressSize: Int): Float {
-    val result = progressSize * STROKE_WIDTH_MULTIPLIER
-    return if (result < 3) {
-        3f
-    } else {
-        result
-    }
-}
-
-private fun calculateDistance(progressSize: Int): Float {
-    val result = progressSize * DISTANCE_MULTIPLIER
-    return if (result < 8) {
-        6.5f
-    } else {
-        result
-    }
-}
-
-private fun calculateArcLength(imageCount: Int, gap: Float): Float {
-    return (TOTAL_ANGLE - (imageCount * gap)) / imageCount
-}
-
-private fun getImage(imagesList: List<Any>, index: Int): Any {
-    var result: Any = R.drawable.ic_placeholder
-    if (index < 0) {
-        return result
-    }
-
-    if (index < imagesList.size && (imagesList[index] is Int || imagesList[index] is String)) {
-        result = imagesList[index]
-    }
-
-    return result
-}
-
-internal fun getAllAnglesList(count: Int): ArrayList<StatusInfo> {
-    val result = ArrayList<StatusInfo>()
-    val gap = calculateGap(count)
-    val eachArcLength = (TOTAL_ANGLE - (count * gap)) / count
-
-    var startArcAngle = START_ANGLE
-    for (i in 0 until count) {
-        result.add(
-            StatusInfo(startAngle = startArcAngle)
-        )
-        startArcAngle += (eachArcLength + gap)
-    }
-    return result
-}
-
-private fun getTargetValue(totalImageCount: Int, viewStatusIndex: Int): Float {
-    return (1f / totalImageCount) * (viewStatusIndex + 1)
+@Preview(showBackground = true)
+@Composable
+fun StoryImageWidgetPreview() {
+    DrawStatusThumbnailWithViewProgress(
+        progressSize = 150,
+        strokeActiveColor = Color.Red,
+        imagesList = prepareSmallImageList(),
+        strokeInActiveColor = Color.LightGray,
+        progressBarColor = Color.Red,
+        widgetBackground = MaterialTheme.colorScheme.surface
+    )
 }
 
 @Composable
 fun ViewStatusProgressBar(
     modifier: Modifier = Modifier,
-    viewedStatuses: MutableList<StatusInfo>,
-    viewStatusIndex: Int,
     strokeActiveColor: Color = Color.Red,
-    progressSize: Int = 240,
-    autoModeIntervalInMilliSeconds: Long
+    progressSize: Int = 200,
+    animateArc: Animatable<Float, AnimationVector1D> = Animatable(0f)
 ) {
-
-    val targetValue = getTargetValue(
-        viewedStatuses.size,
-        viewStatusIndex
-    )
-
-    val animateArc = remember { Animatable(0f) }
-    LaunchedEffect(viewStatusIndex) {
-        animateArc.animateTo(
-            targetValue = targetValue,
-            animationSpec = tween(
-                durationMillis = autoModeIntervalInMilliSeconds.toInt(),
-                easing = LinearEasing
-            )
-        )
-    }
-
     Spacer(
         modifier = modifier
             .drawWithCache {
@@ -178,6 +115,7 @@ fun ViewStatusProgressBar(
     )
 }
 
+
 @Composable
 fun DrawStatusThumbnailWithViewProgress(
     modifier: Modifier = Modifier,
@@ -192,33 +130,59 @@ fun DrawStatusThumbnailWithViewProgress(
     autoModeIntervalInMilliSeconds: Long = 5000,
     @DrawableRes placeHolder: Int = R.drawable.ic_placeholder
 ) {
-    val imageCount = imagesList.size
-    val gap = rememberSaveable {
-        calculateGap(imageCount)
-    }
-    val arcLength = rememberSaveable {
-        calculateArcLength(imageCount, gap)
-    }
+    val statusCount = imagesList.size
+    val statusProgress = remember { Animatable(0f) }
+    var mutableAutoMode by remember { mutableStateOf(autoMode) }
+    val gap = rememberSaveable { calculateGap(statusCount) }
+    val arcLength = rememberSaveable { calculateArcLength(statusCount, gap) }
+    var seenStatusIndex by rememberSaveable { mutableIntStateOf(0) }
+    var isAnimationPaused by rememberSaveable { mutableStateOf(false) }
 
-    var viewStatusIndex by rememberSaveable { mutableIntStateOf(0) }
-    var autoModeToggle by remember { mutableStateOf(autoMode) }
-    var isProgressRunning by rememberSaveable { mutableStateOf(true) }
+    if (statusCount > 0) {
+        val statusList = getAllAnglesList(statusCount)
 
-    if (imageCount > 0) {
-        val nonViewedStatuses = getAllAnglesList(imageCount)
-
-        if (autoModeToggle) {
-            val coroutineScope = rememberCoroutineScope()
-            LaunchedEffect(key1 = imageCount) {
-                coroutineScope.launch {
-                    while (viewStatusIndex < imageCount - 1) {
-                        delay(autoModeIntervalInMilliSeconds)
-                        viewStatusIndex++
-                        isProgressRunning = true
+        if (mutableAutoMode) {
+            LaunchedEffect(isAnimationPaused) {
+                var targetValue = getTargetValue(statusCount, seenStatusIndex)
+                if (isAnimationPaused) {
+                    statusProgress.stop()
+                } else {
+                    statusProgress.animateTo(
+                        targetValue = 1f,
+                        animationSpec = tween(
+                            durationMillis = (autoModeIntervalInMilliSeconds * (statusCount - (seenStatusIndex + 1))).toInt(),
+                            easing = LinearEasing
+                        )
+                    ) {
+                        val precisedValue = value.uptoPrecision(3)
+                        if (precisedValue == 1f) {
+                            mutableAutoMode = false
+                            seenStatusIndex = 0
+                        } else {
+                            if (precisedValue == targetValue) {
+                                seenStatusIndex++
+                                targetValue = getTargetValue(
+                                    statusCount,
+                                    seenStatusIndex
+                                )
+                            }
+                        }
                     }
-                    delay(autoModeIntervalInMilliSeconds)
-                    autoModeToggle = false
                 }
+            }
+        } else {
+            LaunchedEffect(seenStatusIndex) {
+                val targetValue = getTargetValue(
+                    statusCount,
+                    seenStatusIndex
+                )
+                statusProgress.animateTo(
+                    targetValue = targetValue,
+                    animationSpec = tween(
+                        durationMillis = 150,
+                        easing = LinearEasing
+                    )
+                )
             }
         }
 
@@ -232,7 +196,7 @@ fun DrawStatusThumbnailWithViewProgress(
                 modifier = Modifier
                     .drawWithContent {
                         drawIntoCanvas {
-                            nonViewedStatuses.forEach { statusInfo ->
+                            statusList.forEach { statusInfo ->
                                 drawArc(
                                     color = strokeInActiveColor,
                                     startAngle = statusInfo.startAngle,
@@ -250,18 +214,16 @@ fun DrawStatusThumbnailWithViewProgress(
                     .align(Alignment.Center)
             )
             ViewStatusProgressBar(
-                viewedStatuses = nonViewedStatuses,
-                viewStatusIndex = viewStatusIndex,
                 strokeActiveColor = strokeActiveColor,
                 progressSize = progressSize,
                 modifier = Modifier.align(Alignment.Center),
-                autoModeIntervalInMilliSeconds = if (autoModeToggle) autoModeIntervalInMilliSeconds else 150
+                animateArc = statusProgress
             )
             Spacer(
                 modifier = Modifier
                     .drawWithContent {
                         drawIntoCanvas {
-                            nonViewedStatuses.forEach { statusInfo ->
+                            statusList.forEach { statusInfo ->
                                 drawArc(
                                     color = widgetBackground,
                                     startAngle = statusInfo.startAngle + arcLength,
@@ -289,28 +251,34 @@ fun DrawStatusThumbnailWithViewProgress(
                         interactionSource = MutableInteractionSource(),
                         indication = null
                     ) {
-                        if (autoModeToggle.not()) {
-                            if (viewStatusIndex < imageCount - 1) {
-                                viewStatusIndex++
-                                isProgressRunning = true
+                        if (mutableAutoMode) {
+                            isAnimationPaused = statusProgress.isRunning
+                        } else {
+                            if (seenStatusIndex < statusCount - 1) {
+                                seenStatusIndex++
                             } else {
-                                viewStatusIndex = 0
+                                seenStatusIndex = 0
                             }
                         }
                     }
             ) {
                 SubcomposeAsyncImage(
-                    model = getImage(imagesList, viewStatusIndex),
+                    model = getImage(imagesList, seenStatusIndex),
                     contentScale = ContentScale.Crop,
                     contentDescription = null,
                     loading = {
+                        if (mutableAutoMode) {
+                            isAnimationPaused = true
+                        }
                         CircularProgressIndicator(
                             color = progressBarColor,
                             modifier = Modifier.size(progressSize.dp)
                         )
                     },
                     onSuccess = {
-                        isProgressRunning = false
+                        if (mutableAutoMode) {
+                            isAnimationPaused = false
+                        }
                     },
                     modifier = Modifier
                         .size((progressSize - calculateDistance(progressSize)).dp)

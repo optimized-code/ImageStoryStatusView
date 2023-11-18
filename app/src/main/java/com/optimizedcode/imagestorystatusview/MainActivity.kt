@@ -34,51 +34,14 @@ class MainActivity : ComponentActivity() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    DrawStatusThumbnailWithViewProgress(
-                        progressSize = 160,
-                        strokeActiveColor = colorResource(id = R.color.orange),
-                        imagesList = prepareSmallImageList(),
-                        strokeInActiveColor = Color.LightGray,
-                        progressBarColor = colorResource(id = R.color.orange),
-                        widgetBackground = MaterialTheme.colorScheme.surface
-                    )
-
-                    val list = mutableListOf<List<Any>>()
-                    list.add(prepareSmallImageList())
-                    list.add(prepareMediumImageList())
-                    list.add(prepareLargeImageList())
-                    list.add(prepareSmallImageList())
-                    list.add(prepareMediumImageList())
-                    list.add(prepareLargeImageList())
-                    list.add(prepareSmallImageList())
-                    list.add(prepareMediumImageList())
-                    list.add(prepareLargeImageList())
-                    list.add(prepareSmallImageList())
-                    list.add(prepareMediumImageList())
-                    list.add(prepareLargeImageList())
-
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth()
-                    ){
-                        items(items = list){ item ->
-                            DrawStatusThumbnailWithViewProgress(
-                                progressSize = 70,
-                                strokeActiveColor = colorResource(id = R.color.purple_500),
-                                imagesList = item,
-                                autoMode = false,
-                                strokeInActiveColor = Color.LightGray,
-                                progressBarColor = colorResource(id = R.color.purple_200),
-                                widgetBackground = MaterialTheme.colorScheme.surface
-                            )
-                        }
-                    }
+                    WidgetDemo()
                 }
             }
         }
     }
 }
 
-fun prepareSmallImageList(): List<Any>{
+fun prepareSmallList(): List<Any> {
     return listOf(
         "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU",
         "https://fastly.picsum.photos/id/14/2500/1667.jpg?hmac=ssQyTcZRRumHXVbQAVlXTx-MGBxm6NHWD3SryQ48G-o",
@@ -91,7 +54,7 @@ fun prepareSmallImageList(): List<Any>{
     )
 }
 
-fun prepareMediumImageList(): List<Any>{
+fun prepareMediumList(): List<Any> {
     return listOf(
         "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU",
         "https://fastly.picsum.photos/id/14/2500/1667.jpg?hmac=ssQyTcZRRumHXVbQAVlXTx-MGBxm6NHWD3SryQ48G-o",
@@ -119,7 +82,7 @@ fun prepareMediumImageList(): List<Any>{
     )
 }
 
-fun prepareLargeImageList(): List<Any> {
+fun prepareLargeList(): List<Any> {
     return listOf(
         "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU",
         "https://fastly.picsum.photos/id/14/2500/1667.jpg?hmac=ssQyTcZRRumHXVbQAVlXTx-MGBxm6NHWD3SryQ48G-o",
@@ -164,28 +127,60 @@ fun prepareLargeImageList(): List<Any> {
     )
 }
 
+@Composable
+fun WidgetDemo() {
+    DrawStatusThumbnailWithViewProgress(
+        progressSize = 160,
+        strokeActiveColor = colorResource(id = R.color.orange),
+        imagesList = prepareSmallList(),
+        strokeInActiveColor = Color.LightGray,
+        progressBarColor = colorResource(id = R.color.orange),
+        widgetBackground = MaterialTheme.colorScheme.surface
+    )
+
+    val list = mutableListOf<List<Any>>()
+    list.add(prepareSmallList())
+    list.add(prepareMediumList())
+    list.add(prepareLargeList())
+    list.add(prepareSmallList())
+    list.add(prepareMediumList())
+    list.add(prepareLargeList())
+    list.add(prepareSmallList())
+    list.add(prepareMediumList())
+    list.add(prepareLargeList())
+    list.add(prepareSmallList())
+    list.add(prepareMediumList())
+    list.add(prepareLargeList())
+
+    LazyRow(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        items(items = list) { item ->
+            DrawStatusThumbnailWithViewProgress(
+                progressSize = 70,
+                strokeActiveColor = colorResource(id = R.color.purple_500),
+                imagesList = item,
+                autoMode = false,
+                strokeInActiveColor = Color.LightGray,
+                progressBarColor = colorResource(id = R.color.purple_200),
+                widgetBackground = MaterialTheme.colorScheme.surface
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun StoryImageWidgetPreview() {
     ImageStoryStatusViewTheme {
-        val list = mutableListOf<List<Any>>()
-        list.add(prepareSmallImageList())
-        list.add(prepareMediumImageList())
-        list.add(prepareLargeImageList())
-
-        LazyRow(
-            modifier = Modifier.fillMaxWidth()
-        ){
-            items(items = list){ item ->
-                DrawStatusThumbnailWithViewProgress(
-                    progressSize = 70,
-                    strokeActiveColor = colorResource(id = R.color.purple_500),
-                    imagesList = item,
-                    strokeInActiveColor = Color.LightGray,
-                    progressBarColor = colorResource(id = R.color.purple_200),
-                    widgetBackground = MaterialTheme.colorScheme.surface
-                )
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            WidgetDemo()
         }
     }
 }
