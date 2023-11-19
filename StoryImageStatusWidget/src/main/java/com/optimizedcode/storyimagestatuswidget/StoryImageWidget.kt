@@ -128,7 +128,9 @@ fun DrawStatusThumbnailWithViewProgress(
     widgetBackground: Color = colorResource(id = R.color.white),
     autoMode: Boolean = true,
     autoModeIntervalInMilliSeconds: Long = 5000,
-    @DrawableRes placeHolder: Int = R.drawable.ic_placeholder
+    @DrawableRes placeHolder: Int = R.drawable.ic_placeholder,
+    onAutoModeOffCallback: (autoMode: Boolean) -> Unit = {},
+    onPausedProgressCallback: (isPaused: Boolean) -> Unit = {},
 ) {
     val statusCount = imagesList.size
     val statusProgress = remember { Animatable(0f) }
@@ -157,6 +159,7 @@ fun DrawStatusThumbnailWithViewProgress(
                         val precisedValue = value.uptoPrecision(3)
                         if (precisedValue == 1f) {
                             mutableAutoMode = false
+                            onAutoModeOffCallback(false)
                             seenStatusIndex = 0
                         } else {
                             if (precisedValue == targetValue) {
@@ -253,6 +256,7 @@ fun DrawStatusThumbnailWithViewProgress(
                     ) {
                         if (mutableAutoMode) {
                             isAnimationPaused = statusProgress.isRunning
+                            onPausedProgressCallback(isAnimationPaused)
                         } else {
                             if (seenStatusIndex < statusCount - 1) {
                                 seenStatusIndex++
