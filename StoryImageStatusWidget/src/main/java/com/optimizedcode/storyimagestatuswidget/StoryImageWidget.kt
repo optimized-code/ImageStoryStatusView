@@ -2,19 +2,15 @@ package com.optimizedcode.storyimagestatuswidget
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,24 +23,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
-import com.optimizedcode.storyimagestatuswidget.helpers.START_ANGLE
-import com.optimizedcode.storyimagestatuswidget.helpers.TOTAL_ANGLE
+import com.optimizedcode.storyimagestatuswidget.composables.DrawArcGaps
+import com.optimizedcode.storyimagestatuswidget.composables.DrawUnseenStatusBars
+import com.optimizedcode.storyimagestatuswidget.composables.EmptyView
+import com.optimizedcode.storyimagestatuswidget.composables.StoryImageStatusProgressBar
+import com.optimizedcode.storyimagestatuswidget.helpers.calculateArcGap
 import com.optimizedcode.storyimagestatuswidget.helpers.calculateArcLength
 import com.optimizedcode.storyimagestatuswidget.helpers.calculateDistance
-import com.optimizedcode.storyimagestatuswidget.helpers.calculateGap
-import com.optimizedcode.storyimagestatuswidget.helpers.calculateStrokeWidth
 import com.optimizedcode.storyimagestatuswidget.helpers.getAllAnglesList
 import com.optimizedcode.storyimagestatuswidget.helpers.getImage
 import com.optimizedcode.storyimagestatuswidget.helpers.getTargetValue
@@ -62,59 +52,6 @@ import com.optimizedcode.storyimagestatuswidget.helpers.uptoPrecision
  * @license Open source
  ***************************************************************
  */
-
-fun prepareSmallImageList(): List<Any> {
-    return listOf(
-        "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU",
-        "https://fastly.picsum.photos/id/14/2500/1667.jpg?hmac=ssQyTcZRRumHXVbQAVlXTx-MGBxm6NHWD3SryQ48G-o",
-        "https://fastly.picsum.photos/id/20/3670/2462.jpg?hmac=CmQ0ln-k5ZqkdtLvVO23LjVAEabZQx2wOaT4pyeG10I",
-        "https://fastly.picsum.photos/id/22/4434/3729.jpg?hmac=fjZdkSMZJNFgsoDh8Qo5zdA_nSGUAWvKLyyqmEt2xs0",
-        "https://fastly.picsum.photos/id/22/4434/3729.jpg?hmac=fjZdkSMZJNFgsoDh8Qo5zdA_nSGUAWvKLyyqmEt2xs0"
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun StoryImageWidgetPreview() {
-    DrawStatusThumbnailWithViewProgress(
-        progressSize = 150,
-        strokeActiveColor = Color.Red,
-        imagesList = prepareSmallImageList(),
-        strokeInActiveColor = Color.LightGray,
-        progressBarColor = Color.Red,
-        widgetBackground = MaterialTheme.colorScheme.surface
-    )
-}
-
-@Composable
-fun ViewStatusProgressBar(
-    modifier: Modifier = Modifier,
-    strokeActiveColor: Color = Color.Red,
-    progressSize: Int = 200,
-    animateArc: Animatable<Float, AnimationVector1D> = Animatable(0f)
-) {
-    Spacer(
-        modifier = modifier
-            .drawWithCache {
-                onDrawWithContent {
-                    drawIntoCanvas {
-                        drawArc(
-                            color = strokeActiveColor,
-                            startAngle = START_ANGLE,
-                            useCenter = false,
-                            sweepAngle = TOTAL_ANGLE * animateArc.value,
-                            style = Stroke(
-                                (calculateStrokeWidth(progressSize)).dp.toPx(),
-                                cap = StrokeCap.Butt
-                            )
-                        )
-                    }
-                }
-            }
-            .size(progressSize.dp)
-    )
-}
-
 
 @Composable
 fun DrawStatusThumbnailWithViewProgress(
@@ -135,18 +72,17 @@ fun DrawStatusThumbnailWithViewProgress(
     val statusCount = imagesList.size
     val statusProgress = remember { Animatable(0f) }
     var mutableAutoMode by remember { mutableStateOf(autoMode) }
-    val gap = rememberSaveable { calculateGap(statusCount) }
-    val arcLength = rememberSaveable { calculateArcLength(statusCount, gap) }
+    val arcGap = rememberSaveable { calculateArcGap(statusCount) }
+    val arcLength = rememberSaveable { calculateArcLength(statusCount, arcGap) }
     var seenStatusIndex by rememberSaveable { mutableIntStateOf(0) }
-    var isAnimationPaused by rememberSaveable { mutableStateOf(false) }
+    var isProgressPaused by rememberSaveable { mutableStateOf(false) }
 
     if (statusCount > 0) {
         val statusList = getAllAnglesList(statusCount)
-
         if (mutableAutoMode) {
-            LaunchedEffect(isAnimationPaused) {
+            LaunchedEffect(isProgressPaused) {
                 var targetValue = getTargetValue(statusCount, seenStatusIndex)
-                if (isAnimationPaused) {
+                if (isProgressPaused) {
                     statusProgress.stop()
                 } else {
                     statusProgress.animateTo(
@@ -195,53 +131,28 @@ fun DrawStatusThumbnailWithViewProgress(
                 .background(widgetBackground)
                 .then(modifier)
         ) {
-            Spacer(
-                modifier = Modifier
-                    .drawWithContent {
-                        drawIntoCanvas {
-                            statusList.forEach { statusInfo ->
-                                drawArc(
-                                    color = strokeInActiveColor,
-                                    startAngle = statusInfo.startAngle,
-                                    useCenter = false,
-                                    sweepAngle = arcLength,
-                                    style = Stroke(
-                                        (calculateStrokeWidth(progressSize)).dp.toPx(),
-                                        cap = StrokeCap.Butt
-                                    )
-                                )
-                            }
-                        }
-                    }
-                    .size(progressSize.dp)
-                    .align(Alignment.Center)
+            DrawUnseenStatusBars(
+                modifier = Modifier.align(Alignment.Center),
+                progressSize = progressSize,
+                strokeInActiveColor = strokeInActiveColor,
+                statusList = statusList,
+                arcLength = arcLength
             )
-            ViewStatusProgressBar(
+
+            StoryImageStatusProgressBar(
                 strokeActiveColor = strokeActiveColor,
                 progressSize = progressSize,
                 modifier = Modifier.align(Alignment.Center),
                 animateArc = statusProgress
             )
-            Spacer(
-                modifier = Modifier
-                    .drawWithContent {
-                        drawIntoCanvas {
-                            statusList.forEach { statusInfo ->
-                                drawArc(
-                                    color = widgetBackground,
-                                    startAngle = statusInfo.startAngle + arcLength,
-                                    useCenter = false,
-                                    sweepAngle = gap,
-                                    style = Stroke(
-                                        (calculateStrokeWidth(progressSize)).dp.toPx(),
-                                        cap = StrokeCap.Butt
-                                    )
-                                )
-                            }
-                        }
-                    }
-                    .size(progressSize.dp)
-                    .align(Alignment.Center)
+
+            DrawArcGaps(
+                modifier = Modifier.align(Alignment.Center),
+                progressSize = progressSize,
+                statusList = statusList,
+                arcLength = arcLength,
+                arcGap = arcGap,
+                widgetBackground = widgetBackground
             )
 
             Surface(
@@ -255,8 +166,8 @@ fun DrawStatusThumbnailWithViewProgress(
                         indication = null
                     ) {
                         if (mutableAutoMode) {
-                            isAnimationPaused = statusProgress.isRunning
-                            onPausedProgressCallback(isAnimationPaused)
+                            isProgressPaused = statusProgress.isRunning
+                            onPausedProgressCallback(isProgressPaused)
                         } else {
                             if (seenStatusIndex < statusCount - 1) {
                                 seenStatusIndex++
@@ -272,7 +183,7 @@ fun DrawStatusThumbnailWithViewProgress(
                     contentDescription = null,
                     loading = {
                         if (mutableAutoMode) {
-                            isAnimationPaused = true
+                            isProgressPaused = true
                         }
                         CircularProgressIndicator(
                             color = progressBarColor,
@@ -281,7 +192,7 @@ fun DrawStatusThumbnailWithViewProgress(
                     },
                     onSuccess = {
                         if (mutableAutoMode) {
-                            isAnimationPaused = false
+                            isProgressPaused = false
                         }
                     },
                     modifier = Modifier
@@ -292,22 +203,12 @@ fun DrawStatusThumbnailWithViewProgress(
             }
         }
     } else {
-        Box(
-            modifier = Modifier
-                .size((progressSize + calculateDistance(progressSize)).dp)
-                .clip(CircleShape)
-                .then(modifier)
-                .background(widgetBackground)
-        ) {
-            Image(
-                painter = painterResource(id = placeHolder),
-                contentScale = ContentScale.Inside,
-                contentDescription = null,
-                modifier = Modifier
-                    .size((progressSize * 0.3).dp)
-                    .align(Alignment.Center)
-                    .background(imageBackgroundColor)
-            )
-        }
+        EmptyView(
+            modifier = modifier,
+            progressSize = progressSize,
+            imageBackgroundColor = imageBackgroundColor,
+            widgetBackground = widgetBackground,
+            placeHolder = placeHolder
+        )
     }
 }

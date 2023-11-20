@@ -16,7 +16,7 @@ import com.optimizedcode.storyimagestatuswidget.data.StatusInfo
  ***************************************************************
  */
 
-internal fun calculateGap(imageCount: Int): Float {
+internal fun calculateArcGap(imageCount: Int): Float {
     var result = TOTAL_ANGLE / imageCount
     if (result > MAX_GAP) {
         result = MAX_GAP
@@ -50,7 +50,7 @@ internal fun calculateArcLength(imageCount: Int, gap: Float): Float {
 
 internal fun getAllAnglesList(count: Int): ArrayList<StatusInfo> {
     val result = ArrayList<StatusInfo>()
-    val gap = calculateGap(count)
+    val gap = calculateArcGap(count)
     val eachArcLength = (TOTAL_ANGLE - (count * gap)) / count
 
     var startArcAngle = START_ANGLE
