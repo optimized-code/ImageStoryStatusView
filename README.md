@@ -21,7 +21,7 @@ Add below dependancy to the app-level build.gradle file.
 ```
 dependencies {
     ...
-    implementation ("com.github.optimized-code:ImageStoryStatusView:1.0.1")
+    implementation ("com.github.optimized-code:ImageStoryStatusView:1.0.2")
 }
 ```
 
