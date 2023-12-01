@@ -7,8 +7,6 @@ A fast circular image thumbnail widget in jetpack compose, perfect for showing t
 
 ## Screen shots
 
-![showcase_video](https://github.com/optimized-code/ImageStoryStatusView/assets/143836196/6facb8b5-b8df-48bc-9b3e-b7e5e56209ec)
-
 ![story_image_demo_1](https://github.com/optimized-code/ImageStoryStatusView/assets/143836196/75d6887a-2916-43f5-9540-d0f3645ace91)
 
 
